@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { AuthProvider, useAuth } from '../context/AuthContext';
+// import SplashScreen from './SplashScreen'; // 1. Removed SplashScreen import
 
 const MainLayout = () => {
   const { token } = useAuth();
@@ -55,21 +56,31 @@ const MainLayout = () => {
         name="editClient/[id]" 
         options={{ title: 'Edit Client', presentation: 'modal' }} 
       />
-
       <Stack.Screen 
         name="pdfPreview" 
         options={{ title: 'Invoice Preview', presentation: 'modal' }} 
+      />
+      {/* --- NEW SCREEN FOR CLIENT INVOICES --- */}
+      <Stack.Screen 
+        name="clientInvoices/[id]" 
+        options={{ 
+          title: 'Client Invoices',
+          // This is a regular screen, not a modal
+        }} 
       />
     </Stack>
   );
 };
 
+// 2. Simplified the RootLayout component
 const RootLayout = () => {
-  return (
-    <AuthProvider>
-      <MainLayout />
-    </AuthProvider>
-  );
+    // This now directly renders the main app content
+    return (
+        <AuthProvider>
+            <MainLayout />
+        </AuthProvider>
+    );
 };
 
 export default RootLayout;
+

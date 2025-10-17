@@ -26,6 +26,20 @@ const CreateInvoicePage: React.FC<CreateInvoicePageProps> = ({ onClose, onSave }
   const [items, setItems] = useState<Item[]>([{ description: '', quantity: '1', rate: '' }]);
   const [loading, setLoading] = useState(false);
 
+  // --- NEW STATE FOR SUGGESTED INVOICE NUMBER ---
+  const [suggestedInvoiceNumber, setSuggestedInvoiceNumber] = useState('');
+
+  // Generate a suggested invoice number when the component loads
+  useEffect(() => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    // This is just a visual suggestion. The backend will generate the final sequential number.
+    setSuggestedInvoiceNumber(`INV-${year}${month}${day}-001`);
+  }, []);
+
+
   useEffect(() => {
     // Fetch clients to populate the dropdown
     const fetchClients = async () => {
@@ -58,8 +72,8 @@ const CreateInvoicePage: React.FC<CreateInvoicePageProps> = ({ onClose, onSave }
 
   const handleSaveInvoice = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedClientId || !dueDate) {
-      alert('Please select a client and a due date.');
+    if (!selectedClientId || !dueDate || items.some(i => !i.description || !i.rate)) {
+      alert('Please fill all required fields.');
       return;
     }
     setLoading(true);
@@ -76,8 +90,8 @@ const CreateInvoicePage: React.FC<CreateInvoicePageProps> = ({ onClose, onSave }
       };
       await axios.post(`${import.meta.env.VITE_API_URL}/invoices`, invoiceData, config);
       alert('Invoice created successfully!');
-      onSave(); // This will trigger a refresh on the dashboard
-      onClose(); // This will close the modal
+      onSave();
+      onClose();
     } catch (error) {
       alert('Failed to create invoice.');
     } finally {
@@ -86,21 +100,18 @@ const CreateInvoicePage: React.FC<CreateInvoicePageProps> = ({ onClose, onSave }
   };
 
   return (
-    // This outer div centers the modal on the screen.
     <div className="fixed inset-0 z-50 flex justify-center items-center">
-      {/* This div is the semi-transparent background overlay. Clicking it closes the modal. */}
       <div 
-        className="absolute inset-0" 
+        className="absolute inset-0 bg-black bg-opacity-50"
         style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }} 
         onClick={onClose}
       ></div>
-      {/* This is the actual modal content, with a 'relative' position to sit on top of the overlay. */}
-      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
+      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="p-6 border-b flex justify-between items-center">
           <h3 className="text-xl font-semibold">New Invoice</h3>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
         </div>
-        <form onSubmit={handleSaveInvoice} className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+        <form onSubmit={handleSaveInvoice} className="p-6 overflow-y-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700">Client</label>
@@ -126,6 +137,16 @@ const CreateInvoicePage: React.FC<CreateInvoicePageProps> = ({ onClose, onSave }
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
               />
             </div>
+            {/* --- UPDATED INVOICE NUMBER DISPLAY --- */}
+            <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700">Invoice Number</label>
+                <input
+                    type="text"
+                    value={suggestedInvoiceNumber}
+                    readOnly
+                    className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-gray-500"
+                />
+            </div>
           </div>
 
           <hr className="my-6"/>
@@ -142,7 +163,7 @@ const CreateInvoicePage: React.FC<CreateInvoicePageProps> = ({ onClose, onSave }
           <button type="button" onClick={handleAddItem} className="mt-2 text-indigo-600 hover:text-indigo-800 font-medium">+ Add Item</button>
 
         </form>
-        <div className="p-6 bg-gray-50 border-t flex justify-end">
+        <div className="p-6 bg-gray-50 border-t flex justify-end mt-auto">
           <button type="button" onClick={onClose} className="mr-3 py-2 px-4 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">Cancel</button>
           <button type="submit" onClick={handleSaveInvoice} disabled={loading} className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50">
             {loading ? 'Saving...' : 'Save Invoice'}

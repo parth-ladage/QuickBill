@@ -52,16 +52,15 @@ const CreateInvoiceScreen = () => {
   ]);
   const [loading, setLoading] = useState(true);
 
-  // --- GENERATE SUGGESTED INVOICE NUMBER ON LOAD ---
+  // Generate a suggested invoice number when the component loads
   useEffect(() => {
     const today = new Date();
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const day = String(today.getDate()).padStart(2, '0');
-    // Note: This is just a suggestion. The backend will determine the final sequence number.
+    // This is just a visual suggestion. The backend will generate the final sequential number.
     setSuggestedInvoiceNumber(`INV-${year}${month}${day}-001`);
   }, []);
-
 
   useEffect(() => {
     const fetchClients = async () => {
@@ -109,6 +108,7 @@ const CreateInvoiceScreen = () => {
 
     try {
       const config = { headers: { Authorization: `Bearer ${token}` } };
+      // The invoiceNumber is no longer sent from the frontend
       const invoiceData = {
         client: selectedClient._id,
         dueDate,
@@ -173,7 +173,7 @@ const CreateInvoiceScreen = () => {
                 {selectedClient ? selectedClient.name : 'Select a client'}
               </Text>
           </TouchableOpacity>
-          
+
           {/* --- UPDATED INVOICE NUMBER DISPLAY --- */}
           <Text style={styles.label}>Invoice Number</Text>
           <TextInput
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
         marginBottom: 20,
         borderWidth: 1,
         borderColor: '#ddd',
-        justifyContent: 'center'
+        justifyContent: 'center',
     },
     disabledInput: {
         backgroundColor: '#e9ecef',
@@ -378,3 +378,4 @@ const styles = StyleSheet.create({
 });
 
 export default CreateInvoiceScreen;
+

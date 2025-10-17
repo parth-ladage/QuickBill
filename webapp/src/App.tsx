@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import axios from 'axios';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import InvoiceDashboard from './pages/InvoiceDashboard';
@@ -7,76 +8,116 @@ import ClientDashboard from './pages/ClientDashboard';
 import ProfilePage from './pages/ProfilePage';
 import CreateInvoicePage from './pages/CreateInvoicePage';
 import CreateClientPage from './pages/CreateClientPage';
+import EditInvoicePage from './pages/EditInvoicePage';
+import EditClientPage from './pages/EditClientPage';
+import PDFPreviewPage from './pages/PDFPreviewPage';
+import ClientInvoicesPage from './pages/ClientInvoicesPage';
 import Spinner from './components/Spinner';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 
 const AppContent = () => {
   const { token, loading } = useAuth();
-  const [showRegister, setShowRegister] = useState(false);
   const [activeTab, setActiveTab] = useState('invoices');
   
+  // State to toggle between login and register pages
+  const [showRegister, setShowRegister] = useState(false);
+
+  // State for modals that appear when logged in
   const [showCreateInvoice, setShowCreateInvoice] = useState(false);
   const [showCreateClient, setShowCreateClient] = useState(false);
-  
-  const [invoiceRefreshKey, setInvoiceRefreshKey] = useState(0);
-  const [clientRefreshKey, setClientRefreshKey] = useState(0);
+  const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
+  const [editingClientId, setEditingClientId] = useState<string | null>(null);
+  const [previewingInvoiceId, setPreviewingInvoiceId] = useState<string | null>(null);
+  const [viewingClient, setViewingClient] = useState<{id: string, name: string} | null>(null);
 
-  const triggerInvoiceRefresh = () => setInvoiceRefreshKey(prev => prev + 1);
-  const triggerClientRefresh = () => setClientRefreshKey(prev => prev + 1);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [analyticsData, setAnalyticsData] = useState(null);
+
+  const triggerRefresh = () => setRefreshKey(prev => prev + 1);
+
+  const fetchAnalytics = useCallback(async () => {
+    if (!token) return;
+    try {
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/analytics/summary`, config);
+      setAnalyticsData(response.data);
+    } catch (error) { console.error('Failed to fetch analytics data:', error); }
+  }, [token]);
+
+  useEffect(() => { fetchAnalytics(); }, [fetchAnalytics, refreshKey]);
 
   if (loading) {
     return <Spinner />;
   }
 
-  if (token) {
-    return (
-      <div className="min-h-screen bg-gray-100">
-        <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
-        
-        <div className="relative">
+  return (
+    <div className="h-screen bg-gray-100 flex flex-col">
+      <Navbar token={token} activeTab={activeTab} setActiveTab={setActiveTab} />
+      
+      <main className="relative flex-grow overflow-y-auto">
+        {token ? (
+          // --- Logged-In View ---
+          <>
             {activeTab === 'invoices' && 
               <InvoiceDashboard 
                 onShowCreate={() => setShowCreateInvoice(true)} 
-                refreshKey={invoiceRefreshKey}
+                onShowEdit={(id) => setEditingInvoiceId(id)}
+                onShowPreview={(id) => setPreviewingInvoiceId(id)}
+                refreshKey={refreshKey}
+                analyticsData={analyticsData}
               />
             }
             {activeTab === 'clients' && 
               <ClientDashboard 
                 onShowCreate={() => setShowCreateClient(true)}
-                refreshKey={clientRefreshKey}
+                onShowEdit={(id) => setEditingClientId(id)}
+                onShowInvoices={(id, name) => setViewingClient({id, name})}
+                refreshKey={refreshKey}
+                analyticsData={analyticsData}
               />
             }
             {activeTab === 'profile' && <ProfilePage />}
-
-            {showCreateInvoice && 
-              <CreateInvoicePage 
-                onClose={() => setShowCreateInvoice(false)} 
-                onSave={() => {
-                  setShowCreateInvoice(false);
-                  triggerInvoiceRefresh();
-                }} 
+          </>
+        ) : (
+          // --- Logged-Out View ---
+          <>
+            {showRegister ? (
+              <RegisterPage onToggle={() => setShowRegister(false)} />
+            ) : (
+              <LoginPage onToggle={() => setShowRegister(true)} />
+            )}
+          </>
+        )}
+      </main>
+      
+      {/* --- Global Modals (Only rendered when logged in) --- */}
+      {token && (
+        <>
+          {showCreateInvoice && <CreateInvoicePage onClose={() => setShowCreateInvoice(false)} onSave={() => { setShowCreateInvoice(false); triggerRefresh(); }} />}
+          {showCreateClient && <CreateClientPage onClose={() => setShowCreateClient(false)} onSave={() => { setShowCreateClient(false); triggerRefresh(); }} />}
+          {editingInvoiceId && <EditInvoicePage invoiceId={editingInvoiceId} onClose={() => setEditingInvoiceId(null)} onSave={() => { setEditingInvoiceId(null); triggerRefresh(); }} />}
+          {editingClientId && <EditClientPage clientId={editingClientId} onClose={() => setEditingClientId(null)} onSave={() => { setEditingClientId(null); triggerRefresh(); }} />}
+          {previewingInvoiceId && <PDFPreviewPage invoiceId={previewingInvoiceId} onClose={() => setPreviewingInvoiceId(null)} />}
+          {viewingClient && 
+              <ClientInvoicesPage 
+                clientId={viewingClient.id} 
+                clientName={viewingClient.name} 
+                onClose={() => setViewingClient(null)} 
+                onShowEdit={(id) => setEditingInvoiceId(id)}
+                onShowPreview={(id) => setPreviewingInvoiceId(id)}
               />
             }
-            {/* This now correctly renders the CreateClientPage component */}
-            {showCreateClient &&
-              <CreateClientPage
-                onClose={() => setShowCreateClient(false)}
-                onSave={() => {
-                  setShowCreateClient(false);
-                  triggerClientRefresh();
-                }}
-              />
-            }
-        </div>
-      </div>
-    );
-  }
-
-  if (showRegister) {
-    return <RegisterPage onToggle={() => setShowRegister(false)} />;
-  }
-
-  return <LoginPage onToggle={() => setShowRegister(true)} />;
+          {editingInvoiceId && <EditInvoicePage invoiceId={editingInvoiceId} onClose={() => setEditingInvoiceId(null)} onSave={() => { setEditingInvoiceId(null); triggerRefresh(); }} />}
+            {editingClientId && <EditClientPage clientId={editingClientId} onClose={() => setEditingClientId(null)} onSave={() => { setEditingClientId(null); triggerRefresh(); }} />}
+            {previewingInvoiceId && <PDFPreviewPage invoiceId={previewingInvoiceId} onClose={() => setPreviewingInvoiceId(null)} />}
+          
+        </>
+      )}
+      
+      <Footer />
+    </div>
+  );
 };
 
 const App = () => {

@@ -39,12 +39,16 @@ const EditInvoiceScreen = () => {
   const [dueDate, setDueDate] = useState('');
   const [items, setItems] = useState<Item[]>([]);
   const [status, setStatus] = useState('');
-  
+  const [paymentMethod, setPaymentMethod] = useState('-'); // New state for payment method
+
+  // State for modals and pickers
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isStatusModalVisible, setStatusModalVisible] = useState(false);
-  // User can only set these statuses. "Overdue" is calculated automatically.
+  const [isPaymentMethodModalVisible, setPaymentMethodModalVisible] = useState(false); // New state for payment method modal
+
   const statusOptions = ['draft', 'pending', 'paid'];
+  const paymentMethodOptions = ['Online', 'Cash', 'Bank Transfer', 'UPI'];
 
   useEffect(() => {
     if (!id || !token) {
@@ -67,8 +71,10 @@ const EditInvoiceScreen = () => {
           rate: item.rate.toString(),
         })));
         setStatus(data.status);
+        setPaymentMethod(data.paymentMethod || '-'); // Set payment method
       } catch (error) {
         Alert.alert('Error', 'Failed to fetch invoice details.');
+        router.back();
       } finally {
         setLoading(false);
       }
@@ -99,17 +105,16 @@ const EditInvoiceScreen = () => {
   };
 
   const handleUpdateInvoice = async () => {
-    if (!invoiceNumber || !dueDate || items.length === 0 || items.some(i => !i.description || !i.rate || !i.quantity)) {
+    if (!dueDate || items.length === 0 || items.some(i => !i.description || !i.rate || !i.quantity)) {
         Alert.alert('Error', 'Please fill all required fields.');
         return;
     }
     try {
         const config = { headers: { Authorization: `Bearer ${token}` } };
         const updatedData = {
-            invoiceNumber,
             dueDate,
-            // If the status is 'overdue', we save it as 'pending' because 'overdue' is a calculated state.
             status: status === 'overdue' ? 'pending' : status,
+            paymentMethod: status === 'paid' ? paymentMethod : '-', // Only send payment method if status is paid
             items: items.map(item => ({
                 description: item.description,
                 quantity: parseFloat(item.quantity) || 0,
@@ -145,11 +150,41 @@ const EditInvoiceScreen = () => {
                     key={option}
                     style={styles.modalItem}
                     onPress={() => {
-                    setStatus(option);
-                    setStatusModalVisible(false);
+                      setStatus(option);
+                      // If status is not 'paid', reset payment method
+                      if (option !== 'paid') {
+                        setPaymentMethod('-');
+                      }
+                      setStatusModalVisible(false);
                     }}
                 >
                     <Text style={styles.modalItemText}>{option.charAt(0).toUpperCase() + option.slice(1)}</Text>
+                </TouchableOpacity>
+                ))}
+            </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Payment Method Selection Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isPaymentMethodModalVisible}
+        onRequestClose={() => setPaymentMethodModalVisible(false)}
+      >
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPressOut={() => setPaymentMethodModalVisible(false)}>
+            <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Select Payment Method</Text>
+                {paymentMethodOptions.map((option) => (
+                <TouchableOpacity
+                    key={option}
+                    style={styles.modalItem}
+                    onPress={() => {
+                      setPaymentMethod(option);
+                      setPaymentMethodModalVisible(false);
+                    }}
+                >
+                    <Text style={styles.modalItemText}>{option}</Text>
                 </TouchableOpacity>
                 ))}
             </View>
@@ -162,7 +197,7 @@ const EditInvoiceScreen = () => {
           <TextInput style={[styles.input, styles.disabledInput]} value={clientName} editable={false} />
 
           <Text style={styles.label}>Invoice Number</Text>
-          <TextInput style={styles.input} value={invoiceNumber} onChangeText={setInvoiceNumber} />
+          <TextInput style={[styles.input, styles.disabledInput]} value={invoiceNumber} editable={false} />
           
           <Text style={styles.label}>Due Date</Text>
           <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
@@ -176,6 +211,16 @@ const EditInvoiceScreen = () => {
           <TouchableOpacity style={styles.input} onPress={() => setStatusModalVisible(true)}>
             <Text style={{textTransform: 'capitalize'}}>{status || 'Select a status'}</Text>
           </TouchableOpacity>
+
+          {/* Conditionally render Payment Method picker */}
+          {status === 'paid' && (
+            <>
+              <Text style={styles.label}>Payment Method</Text>
+              <TouchableOpacity style={styles.input} onPress={() => setPaymentMethodModalVisible(true)}>
+                <Text>{paymentMethod}</Text>
+              </TouchableOpacity>
+            </>
+          )}
 
           <Text style={styles.subHeader}>Items</Text>
           {items.map((item, index) => (
@@ -307,7 +352,6 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
     },
-    // Modal Styles
     modalOverlay: {
       flex: 1,
       justifyContent: 'center',

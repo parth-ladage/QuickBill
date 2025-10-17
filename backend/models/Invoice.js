@@ -1,21 +1,6 @@
 const mongoose = require('mongoose');
 
-const itemSchema = new mongoose.Schema({
-  description: {
-    type: String,
-    required: true,
-  },
-  quantity: {
-    type: Number,
-    required: true,
-  },
-  rate: {
-    type: Number,
-    required: true,
-  },
-});
-
-const invoiceSchema = new mongoose.Schema(
+const invoiceSchema = mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
@@ -30,9 +15,14 @@ const invoiceSchema = new mongoose.Schema(
     invoiceNumber: {
       type: String,
       required: true,
-      unique: true, // Ensures every invoice number is unique
     },
-    items: [itemSchema], // An array of items using the schema defined above
+    items: [
+      {
+        description: { type: String, required: true },
+        quantity: { type: Number, required: true },
+        rate: { type: Number, required: true },
+      },
+    ],
     totalAmount: {
       type: Number,
       required: true,
@@ -40,16 +30,20 @@ const invoiceSchema = new mongoose.Schema(
     status: {
       type: String,
       required: true,
-      enum: ['draft', 'sent', 'paid', 'overdue'], // Predefined possible values
+      enum: ['draft', 'pending', 'paid', 'overdue'],
       default: 'draft',
-    },
-    issueDate: {
-      type: Date,
-      default: Date.now,
     },
     dueDate: {
       type: Date,
       required: true,
+    },
+    // --- NEW PAYMENT METHOD FIELD ---
+    paymentMethod: {
+      type: String,
+      required: true,
+      // Define the allowed values, with '-' as the default for "Not Paid"
+      enum: ['-', 'Online', 'Cash', 'Bank Transfer', 'UPI'],
+      default: '-',
     },
   },
   {
@@ -57,4 +51,9 @@ const invoiceSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model('Invoice', invoiceSchema);
+// This index ensures that an invoice number is unique for each user.
+invoiceSchema.index({ user: 1, invoiceNumber: 1 }, { unique: true });
+
+const Invoice = mongoose.model('Invoice', invoiceSchema);
+
+module.exports = Invoice;
