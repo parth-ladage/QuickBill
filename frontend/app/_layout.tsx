@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { AuthProvider, useAuth } from '../context/AuthContext';
-// import SplashScreen from './SplashScreen'; // 1. Removed SplashScreen import
+import SplashScreen from './SplashScreen'; // 1. Import the SplashScreen
 
 const MainLayout = () => {
   const { token } = useAuth();
@@ -17,70 +17,41 @@ const MainLayout = () => {
     const inAuthGroup = segments[0] === '(auth)';
 
     if (token && inAuthGroup) {
-      // If the user is signed in AND is in the auth group, redirect them.
       router.replace('/(tabs)');
     } else if (!token && !inAuthGroup) {
-      // If the user is NOT signed in AND is NOT in the auth group, redirect them.
       router.replace('/(auth)');
     }
   }, [token, segments]);
 
-  // Always render the Stack navigator from the very first render.
   return (
     <Stack>
-      {/* The auth screens (login, register) */}
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-      {/* The main app screens (the tab bar) */}
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      
-      {/* Modal screens that can be opened from anywhere */}
-      <Stack.Screen 
-        name="createInvoice" 
-        options={{ 
-          title: 'New Invoice', 
-          presentation: 'modal' 
-        }} 
-      />
-      <Stack.Screen 
-        name="editInvoice/[id]" 
-        options={{ 
-          title: 'Edit Invoice', 
-          presentation: 'modal' 
-        }} 
-      />
-      <Stack.Screen 
-        name="createClient" 
-        options={{ title: 'New Client', presentation: 'modal' }} 
-      />
-      <Stack.Screen 
-        name="editClient/[id]" 
-        options={{ title: 'Edit Client', presentation: 'modal' }} 
-      />
-      <Stack.Screen 
-        name="pdfPreview" 
-        options={{ title: 'Invoice Preview', presentation: 'modal' }} 
-      />
-      {/* --- NEW SCREEN FOR CLIENT INVOICES --- */}
-      <Stack.Screen 
-        name="clientInvoices/[id]" 
-        options={{ 
-          title: 'Client Invoices',
-          // This is a regular screen, not a modal
-        }} 
-      />
+      <Stack.Screen name="createInvoice" options={{ title: 'New Invoice', presentation: 'modal' }} />
+      <Stack.Screen name="editInvoice/[id]" options={{ title: 'Edit Invoice', presentation: 'modal' }} />
+      <Stack.Screen name="createClient" options={{ title: 'New Client', presentation: 'modal' }} />
+      <Stack.Screen name="editClient/[id]" options={{ title: 'Edit Client', presentation: 'modal' }} />
+      <Stack.Screen name="pdfPreview" options={{ title: 'Invoice Preview', presentation: 'modal' }} />
+      <Stack.Screen name="clientInvoices/[id]" options={{ title: 'Client Invoices' }} />
     </Stack>
   );
 };
 
-// 2. Simplified the RootLayout component
 const RootLayout = () => {
-    // This now directly renders the main app content
-    return (
-        <AuthProvider>
-            <MainLayout />
-        </AuthProvider>
-    );
+  // 2. Add state to manage when the animation is finished
+  const [isAnimationFinished, setAnimationFinished] = useState(false);
+
+  // 3. If the animation is not finished, show the splash screen
+  if (!isAnimationFinished) {
+    return <SplashScreen onAnimationFinish={() => setAnimationFinished(true)} />;
+  }
+
+  // 4. Once the animation is done, show the main app
+  return (
+    <AuthProvider>
+      <MainLayout />
+    </AuthProvider>
+  );
 };
 
 export default RootLayout;
-
