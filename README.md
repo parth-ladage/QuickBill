@@ -1,142 +1,190 @@
-# 🚀 QuickBill - Full-Stack Invoice Management System
+# 🚀 QuickBill: An Omni-Channel Invoice Management System
 
-## 📝 Overview
-**QuickBill** is a full-stack **invoice generation and management system** built for freelancers and small businesses. It includes:  
-- A **cross-platform mobile app** for on-the-go usage.  
-- A **dedicated web application** for desktop management.  
+QuickBill is a **full-stack, omni-channel invoicing platform** built for freelancers and small businesses.  
+It provides a **"headless" backend API** that serves two distinct clients:  
+- A **React Native mobile app** for on-the-go management  
+- A **React web application** for a powerful desktop experience  
 
-Both frontends are powered by a **single robust backend API**, ensuring seamless synchronization and real-time updates across devices.
-
-Built using the **MERN stack (MongoDB, Express.js, React/React Native, Node.js)**, QuickBill showcases the **complete development lifecycle** — from backend API creation to deploying multi-platform frontends.
+The system goes beyond simple data entry — it includes a **backend analytics engine** to visualize business health and a **Python microservice** that leverages **machine learning** to predict cash flow and estimate payment dates for outstanding invoices.
 
 ---
 
-## ✨ Core Features
+## 🧩 Core Features
 
-- 🔐 **Full User Authentication** – Secure login & signup using **JWT-based authentication**.  
-- 📄 **Invoice Management (CRUD)** – Create, view, update, and delete invoices with a systematic numbering format:  
-  `INV-YYYYMMDD-NNN`  
-- 👥 **Client Management (CRUD)** – Manage clients with full CRUD functionality.  
-- 🧾 **PDF Generation & Sharing** – Generate professional invoice PDFs, preview them in-app, and share or save directly.  
-- ⚙️ **Configurable User Settings:**  
-  - Upload **Company Logo** for branded invoices.  
-  - Enable/disable **GST** and set custom percentages dynamically.  
-- 🔍 **Powerful Search & Filters** – Quickly find invoices by number or client name.  
-- 💡 **Dual Frontend Applications:**  
-  - 📱 **Mobile App:** Built with **React Native (Expo)** for Android & iOS.  
-  - 💻 **Web App:** Built with **React + Vite** for a fast, responsive browser experience.  
-- 🎨 **Intuitive UI** – Modern, responsive, and minimal design with modals, tabs, and dark-mode-ready layout.
+### ✅ Omni-Channel Access
+Manage your business from a **native mobile app (iOS/Android)** or a **responsive web app**.
 
----
+### ✅ Full CRUD Functionality
+Complete Create, Read, Update, and Delete operations for **Invoices** and **Clients** across all platforms.
 
-## 🛠️ Tech Stack
+### ✅ Secure Authentication
+User-specific **JWT (JSON Web Token)** authentication for all API routes.
 
-### 🔧 Backend
-- **Runtime:** Node.js  
-- **Framework:** Express.js  
-- **Database:** MongoDB + Mongoose ODM  
-- **Authentication:** JSON Web Tokens (JWT)  
-- **Password Hashing:** bcrypt.js  
+### ✅ Analytics Dashboard
+- **Stat Cards** – "Total Revenue" and "Outstanding Revenue"
+- **Revenue Charts** – Line chart for monthly trends; pie chart for invoice statuses
+- **Client Insights** – Bar chart of "Top 5 Clients by Revenue"
 
-### 📱 Frontend (Mobile)
-- **Framework:** React Native (Expo)  
-- **Navigation:** Expo Router (File-based Routing)  
-- **API Client:** Axios  
+### ✅ Predictive AI (Machine Learning)
+- A dedicated **Python (Flask)** microservice trains a model on each user's payment history.  
+- Predicts **Estimated Pay Dates** for pending and overdue invoices.
 
-### 💻 Frontend (Web)
-- **Library:** React + Vite  
-- **Styling:** Tailwind CSS  
-- **API Client:** Axios  
+### ✅ Professional PDF Generation
+- Server-side **HTML-to-PDF** conversion  
+- Customizable invoices with **company logo**, **optional GST**, and **platform fee calculation**  
+- **Smart Invoice Numbering**: Sequential format `INV-YYYYMMDD-NNN`
+
+### ✅ Search & Filtering
+Fast, **debounced search** by name, client, or invoice number across all dashboards.
 
 ---
 
-## 📂 Project Structure
+## 🏗️ System Architecture & Tech Stack
 
-```
-QuickBill/
-├── backend/       # Node.js + Express + MongoDB API
-├── frontend/      # React Native (Expo) mobile application
-└── webapp/        # React (Vite) web application
-```
+This project follows a **polyglot microservice-based architecture**, with all components contained in a monorepo.
 
----
-
-## ⚙️ Getting Started
-
-Follow these steps to run QuickBill locally on your system.
-
-### 🔑 Prerequisites
-- [Node.js (LTS)](https://nodejs.org/)  
-- [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) account  
-- [Git](https://git-scm.com/) installed  
+| **Service** | **Folder** | **Core Technologies** |
+|--------------|-------------|------------------------|
+| Backend API | `/backend` | Node.js, Express, MongoDB, Mongoose, JWT |
+| Mobile App | `/frontend` | React Native, Expo, Expo Router, react-native-gifted-charts |
+| Web App | `/webapp` | React (Vite), TypeScript, Tailwind CSS, recharts |
+| ML Service | `/ml-service` | Python, Flask, scikit-learn, pandas, joblib |
 
 ---
 
-### 🖥️ 1. Backend Setup
+## ⚙️ Getting Started: Setup Instructions
+
+You’ll need to run **all four services** simultaneously to use the full system.
+
+---
+
+### 1️⃣ Backend API (`/backend`)
+
+Handles all core business logic and database interactions.
 
 ```bash
-# Navigate to backend folder
 cd backend
-
-# Install dependencies
 npm install
+```
 
-# Create a .env file with the following:
+Create a .env file:
+
+```bash
 MONGO_URI=your_mongodb_connection_string
 PORT=5001
-JWT_SECRET=your_super_secret_key
+JWT_SECRET=your_jwt_secret_key
+ML_SERVICE_URL=http://localhost:5002
+```
 
-# Run the backend server
+Run the server:
+
+```bash
 npm run dev
 ```
 
----
+Your backend should now be live at:
+👉 http://localhost:5001
 
-### 📲 2. Frontend (Mobile) Setup
+### 2️⃣ ML Service (/ml-service)
+
+Handles all machine learning predictions.
 
 ```bash
-# Navigate to frontend folder
-cd frontend
+cd ml-service
+python -m venv venv
+.\venv\Scripts\activate  # (Windows)
+# source venv/bin/activate  # (Mac/Linux)
+pip install -r requirements.txt
+```
 
-# Install dependencies
+Create a .env file:
+
+```bash
+MONGO_URI=your_mongodb_connection_string
+```
+
+Run the ML server:
+
+```bash
+flask run --port 5002
+```
+
+Your ML service should now be live at:
+👉 http://localhost:5002
+
+ 🧠 Train the Model
+
+After generating at least 10–15 paid invoices, send:
+
+```bash
+POST http://localhost:5002/train
+```
+
+Once you receive 200 OK, your model is ready.
+
+### 3️⃣ Web App (/webapp)
+
+The desktop dashboard for managing invoices and analytics.
+
+```bash
+cd webapp
 npm install
+```
 
-# Create a .env file with your API URL:
-EXPO_PUBLIC_API_URL=http://<YOUR_COMPUTER_IP>:5001/api
+Create a .env file:
 
-# Run the mobile app
+```bash
+VITE_API_URL=http://localhost:5001/api
+```
+
+Run the app:
+
+```bash
+npm run dev
+```
+
+Web dashboard runs at:
+👉 http://localhost:5173
+
+### 4️⃣ Mobile App (/frontend)
+
+The native mobile experience (iOS & Android).
+
+```bash
+cd frontend
+npm install
+```
+
+Create a .env file (⚠️ Use your local IP, not localhost):
+
+```bash
+EXPO_PUBLIC_API_URL=http://YOUR_COMPUTER_IP:5001/api
+```
+
+Run the app:
+
+```bash
 npx expo start
 ```
 
-> 📱 Use the **Expo Go app** on your mobile device to scan the QR code and preview the app.
+Scan the QR code with the Expo Go app.
 
----
+## 🧠 Running the Full System
 
-### 🌐 3. Web App Setup
+Run each service in a separate terminal:
 
-```bash
-# Navigate to webapp folder
-cd webapp
+| **Terminal** | **Command** |
+|--------------|-------------|
+| Backend API | `cd backend && npm run dev` |
+| Mobile App | `cd ml-service && .\venv\Scripts\activate && flask run --port 5002` |
+| Web App | `cd webapp && npm run dev` |
+| ML Service | `cd frontend && npx expo start` |
 
-# Install dependencies
-npm install
+## 🧾 License
 
-# Create a .env file with your API URL:
-VITE_API_URL=http://<YOUR_COMPUTER_IP>:5001/api
+This project is for educational and personal use.
+Feel free to extend it or integrate it into your workflow.
 
-# Run the web application
-npm run dev
-```
+## 💡 Author
 
-> The web app will typically launch at **http://localhost:5173**.
-
----
-
-## 💬 Contributing
-Contributions, issues, and feature requests are welcome!  
-Feel free to open a pull request or raise an issue to help improve **QuickBill**.
-
----
-
-## 📄 License
-This project is licensed under the **MIT License** – see the [LICENSE](./LICENSE) file for details.
+QuickBill – Built with ❤️ for freelancers and small business owners.
