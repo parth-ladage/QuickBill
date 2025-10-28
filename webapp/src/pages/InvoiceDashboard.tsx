@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import Spinner from '../components/Spinner';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
-// Define the types for our data
+// Define the type for an invoice object from your API
 type Invoice = {
   _id: string;
   invoiceNumber: string;
@@ -13,14 +13,16 @@ type Invoice = {
   status: string;
   dueDate: string;
   paymentMethod?: string;
+  predictedPaymentDate?: string; // This is for the ML prediction
 };
 
+// Define the props this component receives from App.tsx
 interface InvoiceDashboardProps {
   onShowCreate: () => void;
   onShowEdit: (invoiceId: string) => void;
   onShowPreview: (invoiceId: string) => void;
   refreshKey: number;
-  analyticsData: any; // Receive analytics data from App.tsx
+  analyticsData: any; // Receives analytics data from App.tsx
 }
 
 const COLORS = {
@@ -38,12 +40,13 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onShowCreate, onSho
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
 
+  // Debounce effect for search input
   useEffect(() => {
     const handler = setTimeout(() => setDebouncedSearchQuery(searchQuery), 500);
     return () => clearTimeout(handler);
   }, [searchQuery]);
 
-  // This function now only fetches the invoice list
+  // This function now correctly *only* fetches the invoice list
   const fetchInvoices = useCallback(async () => {
     if (!token) return;
     setLoading(true);
@@ -59,6 +62,7 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onShowCreate, onSho
     }
   }, [token, debouncedSearchQuery]);
 
+  // Fetch invoices when the component loads or when refreshKey changes
   useEffect(() => {
     fetchInvoices();
   }, [fetchInvoices, refreshKey]);
@@ -68,19 +72,21 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onShowCreate, onSho
       try {
         const config = { headers: { Authorization: `Bearer ${token}` } };
         await axios.delete(`${import.meta.env.VITE_API_URL}/invoices/${invoiceId}`, config);
-        fetchInvoices();
+        fetchInvoices(); // Refresh the invoice list
       } catch (error) {
         alert('Failed to delete invoice.');
       }
     }
   };
   
+  // Memoize the filtered invoice lists
   const { currentInvoices, paidInvoices } = useMemo(() => {
     const current = invoices.filter(inv => inv.status !== 'paid');
     const paid = invoices.filter(inv => inv.status === 'paid');
     return { currentInvoices: current, paidInvoices: paid };
   }, [invoices]);
 
+  // Memoize the pie chart data, based on the analytics prop
   const statusPieData = useMemo(() => {
     return analyticsData?.statusBreakdown.map((item: any) => ({
       name: item._id.charAt(0).toUpperCase() + item._id.slice(1),
@@ -97,6 +103,7 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onShowCreate, onSho
     }
   };
 
+  // Reusable component for rendering the invoice tables
   const InvoiceTable = ({ title, data }: { title: string, data: Invoice[] }) => (
     <div>
       <h3 className="text-xl font-semibold text-gray-800 mb-4">{title}</h3>
@@ -107,7 +114,7 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onShowCreate, onSho
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice #</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status / Est. Payment</th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
@@ -122,11 +129,15 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onShowCreate, onSho
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full capitalize ${getStatusClasses(invoice.status)}`}>
                       {invoice.status}
                     </span>
-                    {invoice.status === 'paid' && invoice.paymentMethod && invoice.paymentMethod !== '-' && (
+                    {invoice.status === 'paid' && invoice.paymentMethod && invoice.paymentMethod !== '-' ? (
                       <div className="text-xs text-gray-500 mt-1">
                         via {invoice.paymentMethod}
                       </div>
-                    )}
+                    ) : (invoice.status === 'pending' || invoice.status === 'overdue') && invoice.predictedPaymentDate ? (
+                      <div className="text-xs text-blue-600 mt-1" title="This is a prediction based on your payment history.">
+                        Est. Pay Date: {invoice.predictedPaymentDate}
+                      </div>
+                    ) : null}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -143,7 +154,6 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onShowCreate, onSho
     </div>
   );
 
-
   if (loading && !analyticsData) {
     return <Spinner />;
   }
@@ -155,7 +165,6 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onShowCreate, onSho
         {/* --- ANALYTICS SECTION --- */}
         {analyticsData && (
           <div className="mb-8">
-            {/* Stat Cards */}
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <div className="bg-white overflow-hidden shadow rounded-lg p-5">
                 <dl>
@@ -171,7 +180,6 @@ const InvoiceDashboard: React.FC<InvoiceDashboardProps> = ({ onShowCreate, onSho
               </div>
             </div>
 
-            {/* Charts */}
             <div className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-5">
               <div className="lg:col-span-3 bg-white shadow rounded-lg p-5">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Revenue Over Time</h3>

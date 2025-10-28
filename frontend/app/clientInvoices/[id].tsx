@@ -7,11 +7,14 @@ import { Ionicons } from '@expo/vector-icons';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
+// 1. Update the Invoice type to include the new fields
 type Invoice = {
   _id: string;
   invoiceNumber: string;
   totalAmount: number;
   status: string;
+  paymentMethod?: string;
+  predictedPaymentDate?: string;
 };
 
 const COLORS = {
@@ -28,11 +31,9 @@ const ClientInvoicesScreen = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // State for search
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
 
-  // State for action menu
   const [isMenuVisible, setMenuVisible] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
 
@@ -46,7 +47,6 @@ const ClientInvoicesScreen = () => {
     try {
       setLoading(true);
       const config = { headers: { Authorization: `Bearer ${token}` } };
-      // Pass both client ID and search query to the API
       const response = await axios.get(`${API_URL}/invoices?client=${id}&search=${debouncedSearchQuery}`, config);
       setInvoices(response.data);
     } catch (error) {
@@ -103,6 +103,15 @@ const ClientInvoicesScreen = () => {
                   <Text style={{ ...styles.itemStatus, color: getStatusColor(item.status) }}>
                       {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
                   </Text>
+                  
+                  {/* --- 2. RENDER THE PREDICTION (Copied from index.tsx) --- */}
+                  {item.status === 'paid' && item.paymentMethod && item.paymentMethod !== '-' ? (
+                    <Text style={styles.paymentMethodText}>via {item.paymentMethod}</Text>
+                  ) : (item.status === 'pending' || item.status === 'overdue') && item.predictedPaymentDate ? (
+                    <Text style={styles.predictionText}>Est. Pay Date: {item.predictedPaymentDate}</Text>
+                  ) : null}
+                  {/* ----------------------------- */}
+
               </View>
               <Text style={styles.itemAmount}>₹{item.totalAmount.toFixed(2)}</Text>
               <TouchableOpacity onPress={() => openMenu(item)} style={styles.menuButton}>
@@ -252,6 +261,19 @@ const styles = StyleSheet.create({
     marginLeft: 15, 
     fontSize: 18, 
     color: '#333' 
+  },
+  // 3. Add the new styles
+  paymentMethodText: { 
+    fontSize: 12, 
+    color: '#6c757d', 
+    fontStyle: 'italic', 
+    marginTop: 2 
+  },
+  predictionText: { 
+    fontSize: 12, 
+    color: '#007bff', 
+    fontStyle: 'italic', 
+    marginTop: 2 
   },
 });
 

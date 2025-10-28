@@ -11,17 +11,21 @@ interface ClientInvoicesPageProps {
   onShowPreview: (invoiceId: string) => void;
 }
 
+// 1. Update the Invoice type to include the new fields
 type Invoice = {
   _id: string;
   invoiceNumber: string;
   totalAmount: number;
   status: string;
+  predictedPaymentDate?: string;
+  paymentMethod?: string;
 };
 
 const ClientInvoicesPage: React.FC<ClientInvoicesPageProps> = ({ clientId, clientName, onClose, onShowEdit, onShowPreview }) => {
   const { token } = useAuth();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
 
@@ -49,7 +53,7 @@ const ClientInvoicesPage: React.FC<ClientInvoicesPageProps> = ({ clientId, clien
   useEffect(() => {
     fetchInvoices();
   }, [fetchInvoices]);
-  
+
   const handleDelete = async (invoiceId: string) => {
     if (window.confirm('Are you sure you want to delete this invoice?')) {
       try {
@@ -79,15 +83,17 @@ const ClientInvoicesPage: React.FC<ClientInvoicesPageProps> = ({ clientId, clien
           <h3 className="text-xl font-semibold">Invoices for {clientName}</h3>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
         </div>
+        
         <div className="p-6">
             <input
               type="text"
               placeholder="Search by invoice number..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full max-w-xs pl-10 pr-4 py-2 border border-gray-300 rounded-md"
+              className="w-full max-w-xs pl-4 pr-4 py-2 border border-gray-300 rounded-md"
             />
         </div>
+
         <div className="px-6 pb-6 overflow-y-auto">
           {loading ? (
             <Spinner />
@@ -98,7 +104,7 @@ const ClientInvoicesPage: React.FC<ClientInvoicesPageProps> = ({ clientId, clien
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice #</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status / Est. Payment</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
                   </tr>
                 </thead>
@@ -108,13 +114,25 @@ const ClientInvoicesPage: React.FC<ClientInvoicesPageProps> = ({ clientId, clien
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{invoice.invoiceNumber}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₹{invoice.totalAmount.toFixed(2)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClasses(invoice.status)}`}>
-                          {invoice.status}
-                        </span>
+                        {/* --- 2. ADDED PREDICTION LOGIC --- */}
+                        <div>
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full capitalize ${getStatusClasses(invoice.status)}`}>
+                            {invoice.status}
+                          </span>
+                          {invoice.status === 'paid' && invoice.paymentMethod && invoice.paymentMethod !== '-' ? (
+                            <div className="text-xs text-gray-500 mt-1">
+                              via {invoice.paymentMethod}
+                            </div>
+                          ) : (invoice.status === 'pending' || invoice.status === 'overdue') && invoice.predictedPaymentDate ? (
+                            <div className="text-xs text-blue-600 mt-1" title="This is a prediction based on your payment history.">
+                              Est. Pay Date: {invoice.predictedPaymentDate}
+                            </div>
+                          ) : null}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button onClick={() => onShowPreview(invoice._id)} className="text-blue-600 hover:text-blue-900 mr-4">Preview</button>
-                        <button onClick={() => onShowEdit(invoice._id)} className="text-indigo-600 hover:text-indigo-900 mr-4">Update</button>
+                        <button onClick={() => onShowEdit(invoice._id)} className="text-indigo-600 hover:text-indigo-900 mr-4">Edit</button>
                         <button onClick={() => handleDelete(invoice._id)} className="text-red-600 hover:text-red-900">Delete</button>
                       </td>
                     </tr>
@@ -134,3 +152,4 @@ const ClientInvoicesPage: React.FC<ClientInvoicesPageProps> = ({ clientId, clien
 };
 
 export default ClientInvoicesPage;
+

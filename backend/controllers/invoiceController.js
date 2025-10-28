@@ -2,6 +2,7 @@ const asyncHandler = require('express-async-handler');
 const Invoice = require('../models/Invoice');
 const Client = require('../models/Client');
 const User = require('../models/User');
+const axios = require('axios'); // For ML service calls
 
 // @desc    Create a new invoice with server-generated number
 // @route   POST /api/invoices
@@ -68,18 +69,14 @@ const getInvoices = asyncHandler(async (req, res) => {
   const { search, client } = req.query;
   const query = { user: req.user.id };
 
-  // If a specific client ID is provided, add it to the main query
   if (client) {
     query.client = client;
   }
 
-  // If a search term is provided, apply the search logic
   if (search) {
-    // If we are already filtering by a client, we only need to search by invoice number.
     if (client) {
       query.invoiceNumber = { $regex: search, $options: 'i' };
     } else {
-      // Otherwise (on the main dashboard), search by invoice number OR client name.
       const matchingClients = await Client.find({
         user: req.user.id,
         name: { $regex: search, $options: 'i' },
@@ -96,15 +93,35 @@ const getInvoices = asyncHandler(async (req, res) => {
     .populate('client', 'name')
     .sort({ createdAt: -1 });
 
-  const processedInvoices = invoices.map(invoice => {
+  // --- PREDICTION LOGIC ---
+  const processedInvoices = await Promise.all(invoices.map(async (invoice) => {
     const invObject = invoice.toObject();
     const today = new Date();
-    today.setHours(0,0,0,0);
+    today.setHours(0, 0, 0, 0);
+
+    // Set overdue status
     if (invObject.status !== 'paid' && new Date(invObject.dueDate) < today) {
       invObject.status = 'overdue';
     }
+
+    // If the invoice is not paid, get a payment prediction
+    if (invObject.status === 'pending' || invObject.status === 'overdue') {
+      try {
+        const { data } = await axios.post(`${process.env.ML_SERVICE_URL}/predict`, {
+          totalAmount: invObject.totalAmount,
+        });
+        
+        const issueDate = new Date(invObject.createdAt);
+        issueDate.setDate(issueDate.getDate() + data.predicted_days);
+        invObject.predictedPaymentDate = issueDate.toISOString().split('T')[0];
+      } catch (error) {
+        console.error("ML service prediction error:", error.message);
+        invObject.predictedPaymentDate = null;
+      }
+    }
     return invObject;
-  });
+  }));
+  // --- END OF LOGIC ---
 
   res.json(processedInvoices);
 });
@@ -127,10 +144,27 @@ const getInvoiceById = asyncHandler(async (req, res) => {
 
   const invObject = invoice.toObject();
   const today = new Date();
-  today.setHours(0,0,0,0);
+  today.setHours(0, 0, 0, 0);
+
   if (invObject.status !== 'paid' && new Date(invObject.dueDate) < today) {
     invObject.status = 'overdue';
   }
+
+  // --- PREDICTION LOGIC FOR SINGLE INVOICE ---
+  if (invObject.status === 'pending' || invObject.status === 'overdue') {
+    try {
+      const { data } = await axios.post(`${process.env.ML_SERVICE_URL}/predict`, {
+        totalAmount: invObject.totalAmount,
+      });
+      const issueDate = new Date(invObject.createdAt);
+      issueDate.setDate(issueDate.getDate() + data.predicted_days);
+      invObject.predictedPaymentDate = issueDate.toISOString().split('T')[0];
+    } catch (error) {
+      console.error("ML service prediction error:", error.message);
+      invObject.predictedPaymentDate = null;
+    }
+  }
+  // --- END OF LOGIC ---
 
   res.json(invObject);
 });
@@ -199,6 +233,7 @@ const getInvoiceAsHtml = asyncHandler(async (req, res) => {
     ? `<img src="${user.logoUrl}" style="width: 100%; max-width: 150px" />` 
     : `<h2 class="company-name">${user.companyName}</h2>`;
 
+  // --- THIS IS THE FULL, CORRECT HTML TEMPLATE ---
   const html = `
     <!DOCTYPE html>
     <html>
@@ -332,7 +367,7 @@ const deleteInvoice = asyncHandler(async (req, res) => {
   const invoice = await Invoice.findById(req.params.id);
 
   if (!invoice) {
-    res.status(404);
+    res.status(4404);
     throw new Error('Invoice not found');
   }
   if (invoice.user.toString() !== req.user.id) {
@@ -352,4 +387,3 @@ module.exports = {
   updateInvoice,
   deleteInvoice,
 };
-

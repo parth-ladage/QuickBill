@@ -11,8 +11,8 @@ import {
   ScrollView,
   RefreshControl,
   TextInput,
-  KeyboardAvoidingView, // 1. Import KeyboardAvoidingView
-  Platform,             // 2. Import Platform
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import axios from 'axios';
@@ -29,6 +29,7 @@ type Invoice = {
   totalAmount: number;
   status: string;
   paymentMethod?: string;
+  predictedPaymentDate?: string; // 1. Added the new prediction field
 };
 
 const COLORS = {
@@ -52,9 +53,15 @@ const InvoiceItem = ({ item, onOpenMenu }: { item: Invoice, onOpenMenu: (invoice
         <Text style={{ ...styles.itemStatus, color: getStatusColor(item.status) }}>
           {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
         </Text>
-        {item.status === 'paid' && item.paymentMethod && item.paymentMethod !== '-' && (
-            <Text style={styles.paymentMethodText}>via {item.paymentMethod}</Text>
-        )}
+        
+        {/* --- 2. RENDER THE PREDICTION --- */}
+        {item.status === 'paid' && item.paymentMethod && item.paymentMethod !== '-' ? (
+          <Text style={styles.paymentMethodText}>via {item.paymentMethod}</Text>
+        ) : (item.status === 'pending' || item.status === 'overdue') && item.predictedPaymentDate ? (
+          <Text style={styles.predictionText}>Est. Pay Date: {item.predictedPaymentDate}</Text>
+        ) : null}
+        {/* ----------------------------- */}
+
       </View>
       <TouchableOpacity onPress={() => onOpenMenu(item)} style={styles.menuButton}>
         <Ionicons name="ellipsis-vertical" size={24} color="#333" />
@@ -142,8 +149,20 @@ const HomeScreen = () => {
     router.push({ pathname: '/pdfPreview', params: { invoiceId: selectedInvoice._id } });
   };
 
+  const pieData = useMemo(() => {
+    if (!analyticsData?.statusBreakdown || analyticsData.statusBreakdown.length === 0) {
+      return []; // Return an empty array if no data
+    }
+    return analyticsData.statusBreakdown.map((item: any) => ({
+      value: item.count,
+      color: COLORS[item._id as keyof typeof COLORS] || '#ccc',
+      text: `${item.count}`,
+      label: item._id.charAt(0).toUpperCase() + item._id.slice(1)
+    }));
+  }, [analyticsData]);
+
+
   return (
-    // 3. Wrap the entire screen content in KeyboardAvoidingView
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -209,21 +228,20 @@ const HomeScreen = () => {
                   <View style={styles.chartContainer}>
                     <Text style={styles.chartTitle}>Invoice Status</Text>
                     <View style={{ alignItems: 'center' }}>
-                      <PieChart
-                        data={analyticsData.statusBreakdown.map((item: any) => ({
-                          value: item.count,
-                          color: COLORS[item._id as keyof typeof COLORS] || '#ccc',
-                          text: `${item.count}`,
-                          label: item._id.charAt(0).toUpperCase() + item._id.slice(1)
-                        }))}
-                        radius={80}
-                        showText
-                        textColor="white"
-                        textSize={16}
-                        showTextBackground
-                        textBackgroundColor='rgba(0,0,0,0.5)'
-                        focusOnPress
-                      />
+                      {pieData.length > 0 ? (
+                        <PieChart
+                          data={pieData}
+                          radius={80}
+                          showText
+                          textColor="white"
+                          textSize={16}
+                          showTextBackground
+                          textBackgroundColor='rgba(0,0,0,0.5)'
+                          focusOnPress
+                        />
+                      ) : (
+                        <Text style={styles.emptyChartText}>No invoice data yet. Create an invoice to see your stats.</Text>
+                      )}
                     </View>
                   </View>
                 </View>
@@ -233,7 +251,7 @@ const HomeScreen = () => {
                 <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
                 <TextInput
                   style={styles.searchInput}
-                  placeholder="Search by invoice # or client..."
+                  placeholder="Search by invoice # or client name..."
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                 />
@@ -280,6 +298,12 @@ const styles = StyleSheet.create({
   statValue: { fontSize: 22, fontWeight: 'bold', color: '#333', marginTop: 4 },
   chartContainer: { backgroundColor: '#fff', padding: 16, borderRadius: 8, elevation: 2, marginBottom: 16 },
   chartTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 10, color: '#333' },
+  emptyChartText: { // 3. Add new style for empty charts
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+    paddingVertical: 60,
+  },
   searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderRadius: 8, marginHorizontal: 16, paddingHorizontal: 10, elevation: 2, marginTop: 16 },
   searchIcon: { marginRight: 10 },
   searchInput: { flex: 1, height: 45, fontSize: 16 },
@@ -290,6 +314,8 @@ const styles = StyleSheet.create({
   itemAmount: { fontSize: 16, fontWeight: 'bold' },
   itemStatus: { fontSize: 14, fontWeight: 'bold' },
   paymentMethodText: { fontSize: 12, color: '#6c757d', fontStyle: 'italic', marginTop: 2 },
+  // 3. Add the new style for the prediction text
+  predictionText: { fontSize: 12, color: '#007bff', fontStyle: 'italic', marginTop: 2 },
   menuButton: { padding: 5 },
   emptyText: { textAlign: 'center', fontSize: 16, color: 'gray', paddingBottom: 20, paddingTop: 10 },
   fab: { position: 'absolute', width: 60, height: 60, alignItems: 'center', justifyContent: 'center', right: 30, bottom: 30, backgroundColor: '#6200ee', borderRadius: 30, elevation: 8 },
