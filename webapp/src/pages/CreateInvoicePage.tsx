@@ -111,7 +111,7 @@ const CreateInvoicePage: React.FC<CreateInvoicePageProps> = ({ onClose, onSave }
           <h3 className="text-xl font-semibold">New Invoice</h3>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
         </div>
-        <form onSubmit={handleSaveInvoice} className="p-6 overflow-y-auto">
+        <form onSubmit={handleSaveInvoice} className="p-6 overflow-y-auto bg-[#eeecff]">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700">Client</label>

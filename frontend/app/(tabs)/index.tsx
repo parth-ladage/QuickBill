@@ -289,7 +289,7 @@ const HomeScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  container: { flex: 1, backgroundColor: '#eeecff' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   analyticsContainer: { paddingHorizontal: 16, paddingTop: 16 },
   statCardsContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },

@@ -77,7 +77,9 @@ const AppContent = () => {
                 analyticsData={analyticsData}
               />
             }
-            {activeTab === 'profile' && <ProfilePage />}
+            {/* --- THIS IS THE FIX --- */}
+            {/* We now pass the setActiveTab function to the ProfilePage */}
+            {activeTab === 'profile' && <ProfilePage setActiveTab={setActiveTab} />}
           </>
         ) : (
           // --- Logged-Out View ---
@@ -96,9 +98,6 @@ const AppContent = () => {
         <>
           {showCreateInvoice && <CreateInvoicePage onClose={() => setShowCreateInvoice(false)} onSave={() => { setShowCreateInvoice(false); triggerRefresh(); }} />}
           {showCreateClient && <CreateClientPage onClose={() => setShowCreateClient(false)} onSave={() => { setShowCreateClient(false); triggerRefresh(); }} />}
-          {editingInvoiceId && <EditInvoicePage invoiceId={editingInvoiceId} onClose={() => setEditingInvoiceId(null)} onSave={() => { setEditingInvoiceId(null); triggerRefresh(); }} />}
-          {editingClientId && <EditClientPage clientId={editingClientId} onClose={() => setEditingClientId(null)} onSave={() => { setEditingClientId(null); triggerRefresh(); }} />}
-          {previewingInvoiceId && <PDFPreviewPage invoiceId={previewingInvoiceId} onClose={() => setPreviewingInvoiceId(null)} />}
           {viewingClient && 
               <ClientInvoicesPage 
                 clientId={viewingClient.id} 
@@ -107,11 +106,10 @@ const AppContent = () => {
                 onShowEdit={(id) => setEditingInvoiceId(id)}
                 onShowPreview={(id) => setPreviewingInvoiceId(id)}
               />
-            }
+          }
           {editingInvoiceId && <EditInvoicePage invoiceId={editingInvoiceId} onClose={() => setEditingInvoiceId(null)} onSave={() => { setEditingInvoiceId(null); triggerRefresh(); }} />}
-            {editingClientId && <EditClientPage clientId={editingClientId} onClose={() => setEditingClientId(null)} onSave={() => { setEditingClientId(null); triggerRefresh(); }} />}
-            {previewingInvoiceId && <PDFPreviewPage invoiceId={previewingInvoiceId} onClose={() => setPreviewingInvoiceId(null)} />}
-          
+          {editingClientId && <EditClientPage clientId={editingClientId} onClose={() => setEditingClientId(null)} onSave={() => { setEditingClientId(null); triggerRefresh(); }} />}
+          {previewingInvoiceId && <PDFPreviewPage invoiceId={previewingInvoiceId} onClose={() => setPreviewingInvoiceId(null)} />}
         </>
       )}
       

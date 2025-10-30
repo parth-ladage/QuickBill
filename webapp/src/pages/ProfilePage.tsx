@@ -1,9 +1,15 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import Spinner from '../components/Spinner';
 
-const ProfilePage = () => {
+// --- THIS IS THE FIX ---
+// 1. Define the props that this component will receive from App.tsx
+interface ProfilePageProps {
+  setActiveTab: (tab: string) => void;
+}
+
+const ProfilePage: React.FC<ProfilePageProps> = ({ setActiveTab }) => {
   const { token, setToken } = useAuth();
   const [loading, setLoading] = useState(true);
 
@@ -12,8 +18,6 @@ const ProfilePage = () => {
   const [lastName, setLastName] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [email, setEmail] = useState('');
-
-  // State for GST settings
   const [isGstEnabled, setIsGstEnabled] = useState(false);
   const [gstPercentage, setGstPercentage] = useState('0');
 
@@ -21,74 +25,80 @@ const ProfilePage = () => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
 
-  const fetchUserProfile = useCallback(async () => {
-    if (!token) return;
-    setLoading(true);
-    try {
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/users/profile`, config);
-      const { firstName, lastName, companyName, email, isGstEnabled, gstPercentage } = response.data;
-      setFirstName(firstName);
-      setLastName(lastName);
-      setCompanyName(companyName);
-      setEmail(email);
-      setIsGstEnabled(isGstEnabled);
-      setGstPercentage(gstPercentage.toString());
-    } catch (error) {
-      alert('Could not fetch your profile data.');
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
-
+  // Use useEffect for web (useFocusEffect is for React Navigation)
   useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+      try {
+        setLoading(true);
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/users/profile`, config);
+        const { firstName, lastName, companyName, email, isGstEnabled, gstPercentage } = response.data;
+        setFirstName(firstName);
+        setLastName(lastName);
+        setCompanyName(companyName);
+        setEmail(email);
+        setIsGstEnabled(isGstEnabled);
+        setGstPercentage(gstPercentage.toString());
+      } catch (error) {
+        alert('Could not fetch your profile data.');
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchUserProfile();
-  }, [fetchUserProfile]);
+  }, [token]);
 
   const handleUpdateProfile = async () => {
     try {
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      const updatedData = { firstName, lastName, companyName, email };
-      const response = await axios.put(`${import.meta.env.VITE_API_URL}/users/profile`, updatedData, config);
-      setToken(response.data.token);
-      alert('Profile updated successfully!');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        const updatedData = { firstName, lastName, companyName, email };
+        const response = await axios.put(`${import.meta.env.VITE_API_URL}/users/profile`, updatedData, config);
+        setToken(response.data.token);
+        alert('Profile updated successfully!');
     } catch (error) {
-      alert('Failed to update profile.');
+        alert('Failed to update profile.');
     }
   };
 
   const handleUpdateTaxSettings = async () => {
     try {
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      const updatedData = { isGstEnabled, gstPercentage: parseFloat(gstPercentage) || 0 };
-      const response = await axios.put(`${import.meta.env.VITE_API_URL}/users/profile`, updatedData, config);
-      setToken(response.data.token);
-      alert('Tax settings updated successfully!');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        const updatedData = { isGstEnabled, gstPercentage: parseFloat(gstPercentage) || 0 };
+        const response = await axios.put(`${import.meta.env.VITE_API_URL}/users/profile`, updatedData, config);
+        setToken(response.data.token);
+        alert('Tax settings updated successfully!');
     } catch (error) {
-      alert('Failed to update tax settings.');
+        alert('Failed to update tax settings.');
     }
   };
 
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword) {
-      alert('Please fill in both password fields.');
-      return;
+        alert('Please fill in both password fields.');
+        return;
     }
     try {
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      const passwordData = { currentPassword, newPassword };
-      await axios.put(`${import.meta.env.VITE_API_URL}/users/change-password`, passwordData, config);
-      alert('Password changed successfully!');
-      setCurrentPassword('');
-      setNewPassword('');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        const passwordData = { currentPassword, newPassword };
+        await axios.put(`${import.meta.env.VITE_API_URL}/users/change-password`, passwordData, config);
+        alert('Password changed successfully!');
+        setCurrentPassword('');
+        setNewPassword('');
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Failed to change password.');
+        alert(error.response?.data?.message || 'Failed to change password.');
     }
   };
 
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to log out?')) {
       setToken(null);
+      // --- THIS IS THE FIX ---
+      // 2. Reset the active tab to 'invoices' when logging out
+      setActiveTab('invoices');
     }
   };
 
@@ -97,7 +107,7 @@ const ProfilePage = () => {
   }
 
   return (
-    <main>
+    <main className='bg-[#eeecff]'>
       <div className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="space-y-6">
           {/* Edit Profile Section */}
@@ -122,7 +132,7 @@ const ProfilePage = () => {
               </div>
             </div>
             <div className="mt-6 flex justify-end">
-              <button onClick={handleUpdateProfile} className="py-2 px-4 text-white font-semibold rounded-lg shadow-md bg-[#6200ee] hover:bg-[#5415ae]">Save Profile</button>
+              <button onClick={handleUpdateProfile} className="py-2 px-4 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700">Save Profile</button>
             </div>
           </div>
 
@@ -140,7 +150,7 @@ const ProfilePage = () => {
               </div>
             )}
             <div className="mt-6 flex justify-end">
-              <button onClick={handleUpdateTaxSettings} className="py-2 px-4 text-white font-semibold rounded-lg shadow-md bg-[#6200ee] hover:bg-[#5415ae]">Save Tax Settings</button>
+              <button onClick={handleUpdateTaxSettings} className="py-2 px-4 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700">Save Tax Settings</button>
             </div>
           </div>
 
@@ -152,7 +162,7 @@ const ProfilePage = () => {
               <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="New Password" className="block w-full px-3 py-2 border border-gray-300 rounded-md" />
             </div>
             <div className="mt-6 flex justify-end">
-              <button onClick={handleChangePassword} className="py-2 px-4 text-white font-semibold rounded-lg shadow-md bg-[#6200ee] hover:bg-[#5415ae]">Update Password</button>
+              <button onClick={handleChangePassword} className="py-2 px-4 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700">Update Password</button>
             </div>
           </div>
           
@@ -167,3 +177,4 @@ const ProfilePage = () => {
 };
 
 export default ProfilePage;
+

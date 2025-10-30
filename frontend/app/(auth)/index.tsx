@@ -8,7 +8,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator, // 1. Import ActivityIndicator
+  ActivityIndicator,
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import axios from 'axios';
@@ -19,12 +19,12 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL;
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false); // 2. Add loading state
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { setToken } = useAuth();
 
   const handleLogin = async () => {
-    if (loading) return; // Prevent multiple clicks while loading
+    if (loading) return;
     if (!email || !password) {
       Alert.alert('Error', 'Please enter both email and password.');
       return;

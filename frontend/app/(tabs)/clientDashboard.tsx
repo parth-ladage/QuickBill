@@ -211,7 +211,7 @@ const ClientsScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  container: { flex: 1, backgroundColor: '#eeecff' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   chartContainer: { backgroundColor: '#fff', padding: 16, borderRadius: 8, elevation: 2, margin: 16 },
   chartTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 10, color: '#333' },

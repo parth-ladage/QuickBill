@@ -114,7 +114,7 @@ const EditInvoicePage: React.FC<EditInvoicePageProps> = ({ invoiceId, onClose, o
                 <Spinner />
             </div>
         ) : (
-            <form onSubmit={handleUpdateInvoice} className="p-6 overflow-y-auto">
+            <form onSubmit={handleUpdateInvoice} className="p-6 overflow-y-auto bg-[#eeecff]">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Client</label>

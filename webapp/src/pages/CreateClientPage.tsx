@@ -50,7 +50,7 @@ const CreateClientPage: React.FC<CreateClientPageProps> = ({ onClose, onSave }) 
           <h3 className="text-xl font-semibold">New Client</h3>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
         </div>
-        <form onSubmit={handleSaveClient} className="p-6 space-y-4">
+        <form onSubmit={handleSaveClient} className="p-6 space-y-4 bg-[#eeecff]">
           <div>
             <label className="block text-sm font-medium text-gray-700">Name</label>
             <input

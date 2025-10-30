@@ -78,7 +78,7 @@ const ClientInvoicesPage: React.FC<ClientInvoicesPageProps> = ({ clientId, clien
   return (
     <div className="fixed inset-0 z-50 flex justify-center items-center">
       <div className="absolute inset-0 bg-black bg-opacity-50" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }} onClick={onClose}></div>
-      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+      <div className="relative bg-[#eeecff] rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="p-6 border-b flex justify-between items-center">
           <h3 className="text-xl font-semibold">Invoices for {clientName}</h3>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>

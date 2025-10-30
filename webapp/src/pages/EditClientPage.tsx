@@ -68,7 +68,7 @@ const EditClientPage: React.FC<EditClientPageProps> = ({ clientId, onClose, onSa
         {loading ? (
           <div className="p-6 text-center">Loading...</div>
         ) : (
-          <form onSubmit={handleUpdateClient} className="p-6 space-y-4">
+          <form onSubmit={handleUpdateClient} className="p-6 space-y-4 bg-[#eeecff]">
             <div>
               <label className="block text-sm font-medium text-gray-700">Name</label>
               <input type="text" value={name} onChange={(e) => setName(e.target.value)} required className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md" />
